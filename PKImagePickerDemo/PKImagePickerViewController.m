@@ -30,6 +30,7 @@
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
         // Custom initialization
+        self.showAlbum = YES;
     }
     return self;
 }
@@ -44,11 +45,6 @@
     return YES;
 }
 
-
--(BOOL)shouldAutorotate
-{
-    return NO;
-}
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -109,10 +105,12 @@
     [self.view addSubview:frontcamera];
     }
     
-    UIButton *album = [[UIButton alloc]initWithFrame:CGRectMake(CGRectGetWidth(self.view.frame)-35, CGRectGetHeight(self.view.frame)-40, 27, 27)];
-    [album setImage:[UIImage imageNamed:@"PKImageBundle.bundle/library"] forState:UIControlStateNormal];
-    [album addTarget:self action:@selector(showalbum:) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:album];
+    if (self.showAlbum) {
+        UIButton *album = [[UIButton alloc]initWithFrame:CGRectMake(CGRectGetWidth(self.view.frame)-35, CGRectGetHeight(self.view.frame)-40, 27, 27)];
+        [album setImage:[UIImage imageNamed:@"PKImageBundle.bundle/library"] forState:UIControlStateNormal];
+        [album addTarget:self action:@selector(showalbum:) forControlEvents:UIControlEventTouchUpInside];
+        [self.view addSubview:album];
+    }
     
     UIButton *cancel = [[UIButton alloc]initWithFrame:CGRectMake(5, CGRectGetHeight(self.view.frame)-40, 32, 32)];
     [cancel setImage:[UIImage imageNamed:@"PKImageBundle.bundle/cancel"] forState:UIControlStateNormal];
@@ -183,15 +181,24 @@
             UIImage *capturedImage = [[UIImage alloc]initWithData:imageData scale:1];
             self.isCapturingImage = NO;
             self.capturedImageView.image = capturedImage;
-            [self.view addSubview:self.imageSelectedView];
             self.selectedImage = capturedImage;
             imageData = nil;
+            
+            if ([self shouldSkipImageConfirmation]) {
+                [self dismissViewControllerAnimated:YES completion:^{
+                    if ([self.delegate respondsToSelector:@selector(imageSelected:)]) {
+                        [self.delegate imageSelected:self.selectedImage];
+                    }
+                    [self.imageSelectedView removeFromSuperview];
+                }];
+            } else {
+                [self.view addSubview:self.imageSelectedView];
+            }
         }
     }];
     
     
 }
-
 
 -(IBAction)flash:(UIButton*)sender
 {
@@ -279,10 +286,21 @@
 {
     self.selectedImage = [info objectForKey:UIImagePickerControllerOriginalImage];
     
-    [self dismissViewControllerAnimated:YES completion:^{
-        self.capturedImageView.image = self.selectedImage;
-        [self.view addSubview:self.imageSelectedView];
-    }];
+    if ([self shouldSkipImageConfirmation]) {
+        [self dismissViewControllerAnimated:NO completion:^{
+            [self dismissViewControllerAnimated:YES completion:^{
+                if ([self.delegate respondsToSelector:@selector(imageSelected:)]) {
+                    [self.delegate imageSelected:self.selectedImage];
+                }
+                [self.imageSelectedView removeFromSuperview];
+            }];
+        }];
+    } else {
+        [self dismissViewControllerAnimated:YES completion:^{
+            self.capturedImageView.image = self.selectedImage;
+            [self.view addSubview:self.imageSelectedView];
+        }];
+    }
     
 }
 
