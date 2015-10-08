@@ -185,12 +185,7 @@
             imageData = nil;
             
             if ([self shouldSkipImageConfirmation]) {
-                [self dismissViewControllerAnimated:YES completion:^{
-                    if ([self.delegate respondsToSelector:@selector(imageSelected:)]) {
-                        [self.delegate imageSelected:self.selectedImage];
-                    }
-                    [self.imageSelectedView removeFromSuperview];
-                }];
+                [self didConfirmSelection];
             } else {
                 [self.view addSubview:self.imageSelectedView];
             }
@@ -259,13 +254,25 @@
 
 -(IBAction)photoSelected:(id)sender
 {
-    
-    [self dismissViewControllerAnimated:YES completion:^{
-        if ([self.delegate respondsToSelector:@selector(imageSelected:)]) {
-            [self.delegate imageSelected:self.selectedImage];
-        }
-        [self.imageSelectedView removeFromSuperview];
-    }];
+    [self didSelectImage];
+}
+
+- (void)didConfirmSelection {
+    if (self.dontDismissOnConfirm) {
+        [self dismissViewControllerAnimated:YES completion:^{
+            [self didSelectImage];
+        }];
+    }
+    else {
+        [self didSelectImage];
+    }
+}
+
+- (void)didSelectImage {
+    if ([self.delegate respondsToSelector:@selector(imageSelected:)]) {
+        [self.delegate imageSelected:self.selectedImage];
+    }
+    [self.imageSelectedView removeFromSuperview];
 }
 
 -(IBAction)cancelSelectedPhoto:(id)sender
@@ -279,7 +286,6 @@
         if ([self.delegate respondsToSelector:@selector(imageSelectionCancelled)]) {
             [self.delegate imageSelectionCancelled];
         }
-
     }];
 }
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info
@@ -288,12 +294,7 @@
     
     if ([self shouldSkipImageConfirmation]) {
         [self dismissViewControllerAnimated:NO completion:^{
-            [self dismissViewControllerAnimated:YES completion:^{
-                if ([self.delegate respondsToSelector:@selector(imageSelected:)]) {
-                    [self.delegate imageSelected:self.selectedImage];
-                }
-                [self.imageSelectedView removeFromSuperview];
-            }];
+            [self didConfirmSelection];
         }];
     } else {
         [self dismissViewControllerAnimated:YES completion:^{
